@@ -35,9 +35,19 @@ export function stampForce(
   out.fy = 0
 
   // ── gravity wells ──────────────────────────────────────────────────────────
-  // At r = 100 with the default strength of 1200 the pull equals gravity
-  // exactly; at r = 50 it is four times gravity. That scale is what makes a
-  // well a screen away a gentle curve and one near the track a slingshot.
+  //
+  // Pull is `strength / r²`, clamped so r never falls below WELL_MIN_R. Inverse
+  // square is what makes a well a screen away a gentle curve and one near the
+  // track a slingshot: halving the distance quadruples the pull.
+  //
+  // **One gravity at r = 100 needs `strength = GRAVITY * 10000`** — 1050 at the
+  // current gravity. This used to be written down as a flat 1200 with the claim
+  // that it equalled gravity exactly, which was true only while gravity was
+  // 0.12; after it was loosened, the documented scale an author picks a strength
+  // from was 14% out. Express it against GRAVITY or it goes stale again.
+  //
+  // The clamp bites hard: at strength 1050 a point inside WELL_MIN_R feels
+  // (100 / WELL_MIN_R)² ≈ 17× gravity.
   for (let i = 0; i < world.wells.length; i++) {
     const w = world.wells[i]!
     const dx = w.x - x

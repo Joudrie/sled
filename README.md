@@ -19,7 +19,7 @@ You can draw a track and watch him ride it, and the level travels in the URL.
 | --- | --- |
 | ✅ **Sim core** | 5-point rig, 6 constraints, 8 brushes, 3 stamps, swept collision |
 | ✅ **Level format** | half-pixel integers → delta → zig-zag → varint → base64url |
-| ✅ **Determinism gate** | 16 checks, green |
+| ✅ **Determinism gate** | 17 checks, green |
 | ✅ **The page** | paper, grain and crinkle, ruled lines, ink vs highlighter, doodles |
 | ✅ **Editor** | draw, undo/redo, erase, pan, zoom, play, reset — all eight brushes |
 | ✅ **Share link** | the level lives in the URL; no backend of any kind |
@@ -115,7 +115,7 @@ republishes it.
 ```sh
 npm install
 npm run dev        # the editor
-npm run verify     # the determinism gate — 16 checks
+npm run verify     # the determinism gate — 17 checks
 npm test           # typecheck + verify
 npm run build      # typecheck + production build
 ```
@@ -208,6 +208,7 @@ different standard: it has to fit a phone screen *whole* and end in a win.
 | 14 | the portal one-way flag actually blocks the return trip |
 | 15 | no stale pen count in the shipped meta tags |
 | 16 | the demo track fits a phone whole and ends in a win |
+| 17 | everything derived from `GRAVITY` still is, and water is still survivable |
 
 Checks 9 and 10 exist because a fixture that stops covering a mechanic makes the
 other checks pass on a track that no longer exercises it — which is how a gate

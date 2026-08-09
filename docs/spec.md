@@ -385,14 +385,14 @@ changes every existing level string:
 
 | | Value | |
 | --- | --- | --- |
-| `GRAVITY` | **`0.105`** | px/tick², ≈175 px of fall in the first second |
+| `GRAVITY` | **`0.105`** | px/tick², **188 px** of fall in the first second (measured) |
 | `AIR` | `0.999` | per-tick velocity retention |
 | `ITERATIONS` | `6` | constraint passes per tick |
 | `MAX_TICKS_PER_FRAME` | `5` | stall guard |
 | `EPS_LEN` | `1e-9` | degenerate-length guard |
 | `CONTACT_R` | **`2.0`** | contact band, px — see §9.6 |
 | `HEAD_CRASH_R` | **`2.0`** | gameplay tolerance, held *separately* |
-| `BUOYANCY` | **`0.06`** | half gravity: he sinks, does not bob |
+| `BUOYANCY` | **`GRAVITY * 0.5`** | half gravity: he sinks, does not bob — *derived* |
 | `WATER_DRAG` | **`0.012`** | ≈50% of speed lost per second under |
 | `POSTURE_K` | `0.12` | soft pull toward upright |
 | `POSTURE_REST_UP` | `16.0` | head offset along the sled's up, at rest |
@@ -404,6 +404,18 @@ changes every existing level string:
 | `OFF_TRACK_MARGIN` | `2000` | leaving the level by this much ends the run |
 | `SPAWN_SNAP_R` | `400` | how far to look for a line to sit on |
 | `SPAWN_AHEAD` | **`28.0`** | nudge downhill, so the tail is not behind the flag |
+
+**Anything derived from `GRAVITY` must be derived in code.** Loosening it from
+0.12 to 0.105 silently broke three relationships that had been written down as
+fixed numbers: `BUOYANCY` stopped being half of gravity and stayed at `0.06`
+(57%, and the net sink fell 25%); the gravity well's documented "strength 1200 =
+one gravity at r = 100" drifted 14% out; and the free-fall figure in the comment
+was wrong before and after. Check 17 measures all of it now, and is
+mutation-tested against each.
+
+The free-fall number is the one worth understanding: position Verlet accumulates
+`g` into velocity every tick, so 60 ticks of falling is nearer `g·n(n+1)/2` than
+`½gn²` — 188 px, not the 175 that was guessed.
 
 `GRAVITY` was `0.12` through phase 1. It came down because a jump is the thing
 people build tracks *for*, and at `0.12` the arc was over before it read as one.

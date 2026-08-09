@@ -29,9 +29,17 @@ export function step(rig: Rig, world: World): void {
     let vy = (p.y - p.py) * AIR
     let gy = GRAVITY
 
-    // Water is a half-plane, not a surface to collide with. Buoyancy at 0.06
-    // against gravity at 0.12 means he sinks and drags heavily: a water section
-    // is a speed penalty you can survive, not a wall.
+    // Water is a half-plane, not a surface to collide with: buoyancy is half of
+    // gravity, so he sinks and drags heavily — a speed penalty you can survive,
+    // not a wall. The descent's pool is the reference: in at 6.5 px/tick, out at
+    // 3.8, still moving.
+    //
+    // Both forces act on the RIDE points only. That looks arbitrary — buoyancy is
+    // a body force and `IS_RIDE` is a *collision* predicate — and it was
+    // investigated on exactly that suspicion. Widening it to all five points was
+    // measured and made things worse, not better: drag on all five turns a 400 px
+    // pool into a dead stop 21 px short of the wall the descent is supposed to
+    // hit. The scoping stays until someone has a level it demonstrably breaks.
     if (IS_RIDE[i]! && submerged(p.x, p.y, world)) {
       vx *= 1 - WATER_DRAG
       vy *= 1 - WATER_DRAG
