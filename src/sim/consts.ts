@@ -14,9 +14,20 @@
 /**
  * px/tick². Tune here, nowhere else.
  *
- * Loosened from 0.12 so a jump hangs long enough to be worth building. About
- * 175 px of fall in the first second rather than 200 — enough air to land a
+ * Loosened from 0.12 so a jump hangs long enough to be worth building.
+ * **188 px** of fall in the first second rather than 215 — enough air to land a
  * gap deliberately, not so little that he floats.
+ *
+ * Those two figures are measured, not estimated. The comment previously said
+ * 175 and 200; both were guessed at the time the constant changed and both were
+ * wrong, because position Verlet accumulates `g` into velocity every tick and
+ * the sum over 60 ticks is nearer `g · n(n+1)/2` than `½gn²`. Check 17 measures
+ * it now.
+ *
+ * **Anything derived from this must be derived in code, not by hand.** Loosening
+ * it from 0.12 silently broke three relationships that were written down as
+ * fixed numbers: buoyancy stopped being half of gravity, and the gravity well's
+ * documented strength scale drifted 14%.
  */
 export const GRAVITY = 0.105
 
@@ -52,8 +63,17 @@ export const CONTACT_R = 2.0
  */
 export const HEAD_CRASH_R = 2.0
 
-/** Upward acceleration while submerged. Half of gravity: he sinks, he does not bob. */
-export const BUOYANCY = 0.06
+/**
+ * Upward acceleration while submerged. Half of gravity: he sinks, he does not
+ * bob.
+ *
+ * Derived, not written down. It was the literal `0.06` — exactly half of the
+ * 0.12 gravity of the day — and stayed 0.06 when gravity became 0.105, so the
+ * net sink quietly fell 25% (0.060 → 0.045) and it became 57% of gravity while
+ * still being documented as half. Deriving it is the only way that cannot happen
+ * again.
+ */
+export const BUOYANCY = GRAVITY * 0.5
 
 /** Per-tick velocity loss while submerged. Roughly half of speed per second. */
 export const WATER_DRAG = 0.012

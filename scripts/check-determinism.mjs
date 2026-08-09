@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 import { BRUSH, BRUSHES, CONTACT_R, buildWorld, spawn, step } from '../src/sim/index.ts'
+import { BUOYANCY, GRAVITY } from '../src/sim/consts.ts'
 import { decodeLevel, encodeLevel } from '../src/level/format.ts'
 import { decorRng } from '../src/level/prng.ts'
 import { fixtureDemo, fixtureDescent, fixturePortal } from '../src/level/fixtures.ts'
@@ -422,6 +423,52 @@ check(16, 'first run · the demo track fits a phone whole and ends in a win', ()
     // Below about 0.45 the sled is under 13 px and the ruling starts to moiré.
     if (f.zoom < 0.45) notes.push(`${name}: fits only at zoom ${f.zoom.toFixed(3)}`)
   }
+
+  return notes.length === 0 ? true : notes.join('; ')
+})
+
+check(17, 'gravity · everything derived from it still is', () => {
+  // Loosening GRAVITY from 0.12 to 0.105 silently broke three things that were
+  // written down as fixed numbers rather than derived. This is the check that
+  // stops the next tuning pass doing it again.
+  const notes = []
+
+  if (BUOYANCY !== GRAVITY * 0.5) {
+    notes.push(`BUOYANCY ${BUOYANCY} is ${(BUOYANCY / GRAVITY * 100).toFixed(1)}% of gravity, not half`)
+  }
+
+  // Free fall, measured off the integrator rather than off a formula. Position
+  // Verlet accumulates g into velocity every tick, so the answer is nearer
+  // g·n(n+1)/2 than ½gn² — which is how the documented figure came to be wrong.
+  const empty = buildWorld({ v: 1, r: [0, 0, 0, 0], s: [0, 0], l: [], p: [], g: [], w: [] })
+  const faller = spawn(empty)
+  const y0 = faller.pts[0].y
+  for (let t = 0; t < 60; t++) step(faller, empty)
+  const fell = faller.pts[0].y - y0
+  if (Math.abs(fell - 188) > 4) notes.push(`free fall is ${fell.toFixed(1)} px/s, docs say 188`)
+
+  // Water must stay a speed penalty you can survive rather than a wall. Measured
+  // on the descent's own pool, which is a properly built one — 400 px of water
+  // over a solid floor — rather than on a level invented here.
+  //
+  // Three levels invented for this check produced confident nonsense before this
+  // was written: a pool with no bottom, a pool whose floor sloped away from the
+  // surface, and one whose run-out ended mid-air. Each made the rig tumble as it
+  // fell out of the world, which reads exactly like the rig rolling over. Use a
+  // level someone actually built.
+  let entrySpeed = 0
+  let exitSpeed = 0
+  for (const [nx, ny, , , px, py] of baseDescent.trace.map((r, i) => {
+    const prev = baseDescent.trace[i - 1] ?? r
+    return [r[0], r[1], r[2], r[3], prev[0], prev[1]]
+  })) {
+    const v = Math.sqrt((nx - px) ** 2 + (ny - py) ** 2)
+    if (!entrySpeed && nx >= 1700) entrySpeed = v
+    if (!exitSpeed && nx >= 2100) exitSpeed = v
+  }
+  if (!exitSpeed) notes.push('the descent never crosses its own pool — water has become a wall')
+  else if (exitSpeed < 1.5) notes.push(`descent leaves the pool at ${exitSpeed.toFixed(2)} px/tick — barely moving`)
+  else if (exitSpeed > entrySpeed * 0.9) notes.push(`pool cost only ${(100 - exitSpeed / entrySpeed * 100).toFixed(0)}% of speed — water is not a penalty`)
 
   return notes.length === 0 ? true : notes.join('; ')
 })
